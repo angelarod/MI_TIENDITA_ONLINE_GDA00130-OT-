@@ -1,8 +1,9 @@
-import express from 'express'
-import productRoutes from './routes/products.routes.js'
+import express from "express";
+import productRoutes from "./routes/products.routes.js";
 
-const app = express()
+const app = express();
 
-app.use(productRoutes)
+app.use(express.json());
+app.use(productRoutes);
 
-export default app
+export default app;
