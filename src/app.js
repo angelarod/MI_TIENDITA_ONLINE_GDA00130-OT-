@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config(); // Carga las variables del archivo .env
+
 import express from "express";
 import productRoutes from "./routes/products.routes.js";
 

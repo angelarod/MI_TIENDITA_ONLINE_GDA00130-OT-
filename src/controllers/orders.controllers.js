@@ -2,46 +2,66 @@ import { getConnection, sql } from "../database/connection.js";
 
 // Crear una orden (solo encabezado)
 export const createOrder = async (req, res) => {
-    const { usuarios_idusuarios, clientes_idClientes, total_orden, fecha_entrega } = req.body;
+    const { clienteId, fecha, total } = req.body;
 
     try {
         const pool = await getConnection();
         const result = await pool
             .request()
-            .input('usuarios_idusuarios', sql.Int, usuarios_idusuarios)
-            .input('clientes_idClientes', sql.Int, clientes_idClientes)
-            .input('total_orden', sql.Decimal, total_orden)
-            .input('fecha_entrega', sql.date, fecha_entrega)
-            .query('INSERT INTO orden (usuarios_idusuarios, clientes_idClientes, total_orden, fecha_entrega, estados_idestados) VALUES (@usuarios_idusuarios, @clientes_idClientes, @total_orden, @fecha_entrega, 1)'); // Activo
+            .input('clienteId', sql.Int, clienteId)
+            .input('fecha', sql.DateTime, fecha)
+            .input('total', sql.Decimal, total)
+            .query(
+                'INSERT INTO ordenes (clienteId, fecha, total) VALUES (@clienteId, @fecha, @total)'
+            );
 
-        res.status(201).send("Orden creada exitosamente");
+        res.status(201).json({
+            message: "Orden creada exitosamente",
+            orderId: result.recordset[0]?.idOrden || null,
+        });
     } catch (error) {
-        res.status(500).send("Error al crear la orden: " + error.message);
+        res.status(500).json({
+            message: "Error al crear la orden",
+            error: error.message,
+        });
     }
 };
 
 // Actualizar una orden
 export const updateOrder = async (req, res) => {
-    const { id } = req.params;
-    const { usuarios_idusuarios, clientes_idClientes, total_orden, fecha_entrega } = req.body;
+    const { id } = req.params; // ID de la orden
+    const { clienteId, fechaOrden, estado } = req.body; // Campos del encabezado a actualizar
 
     try {
         const pool = await getConnection();
+
         const result = await pool
             .request()
-            .input('id', sql.Int, id)
-            .input('usuarios_idusuarios', sql.Int, usuarios_idusuarios)
-            .input('clientes_idClientes', sql.Int, clientes_idClientes)
-            .input('total_orden', sql.Decimal, total_orden)
-            .input('fecha_entrega', sql.date, fecha_entrega)
-            .query('UPDATE orden SET usuarios_idusuarios = @usuarios_idusuarios, clientes_idClientes = @clientes_idClientes, total_orden = @total_orden, fecha_entrega = @fecha_entrega WHERE idOrden = @id');
+            .input("id", sql.Int, id)
+            .input("clienteId", sql.Int, clienteId)
+            .input("fechaOrden", sql.Date, fechaOrden)
+            .input("estado", sql.VarChar, estado)
+            .query(`
+                UPDATE ordenes
+                SET 
+                    clienteId = ISNULL(@clienteId, clienteId),
+                    fechaOrden = ISNULL(@fechaOrden, fechaOrden),
+                    estado = ISNULL(@estado, estado)
+                WHERE idOrden = @id
+            `);
 
         if (result.rowsAffected[0] === 0) {
-            return res.status(404).send("Orden no encontrada");
+            return res.status(404).json({ message: "Orden no encontrada" });
         }
 
-        res.send("Orden actualizada exitosamente");
+        res.json({
+            message: "Orden actualizada exitosamente",
+            updatedFields: { clienteId, fechaOrden, estado },
+        });
     } catch (error) {
-        res.status(500).send("Error al actualizar la orden: " + error.message);
+        res.status(500).json({
+            message: "Error al actualizar la orden",
+            error: error.message,
+        });
     }
 };

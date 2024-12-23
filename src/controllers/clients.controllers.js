@@ -2,46 +2,69 @@ import { getConnection, sql } from "../database/connection.js";
 
 // Crear cliente
 export const createClient = async (req, res) => {
-    const { nombre, direccion, telefono, email } = req.body;
+    const { nombre, correo, telefono } = req.body;
 
     try {
         const pool = await getConnection();
         const result = await pool
             .request()
-            .input('nombre', sql.varchar, nombre)
-            .input('direccion', sql.varchar, direccion)
-            .input('telefono', sql.varchar, telefono)
-            .input('email', sql.varchar, email)
-            .query('INSERT INTO clientes (nombre, direccion, telefono, email) VALUES (@nombre, @direccion, @telefono, @email)');
+            .input('nombre', sql.VarChar, nombre)
+            .input('correo', sql.VarChar, correo)
+            .input('telefono', sql.VarChar, telefono)
+            .query(
+                'INSERT INTO clientes (nombre, correo, telefono) VALUES (@nombre, @correo, @telefono)'
+            );
 
-        res.status(201).send("Cliente creado exitosamente");
+        res.status(201).json({
+            message: "Cliente creado exitosamente",
+            clientId: result.recordset[0]?.idCliente || null,
+        });
     } catch (error) {
-        res.status(500).send("Error al crear el cliente: " + error.message);
+        res.status(500).json({
+            message: "Error al crear el cliente",
+            error: error.message,
+        });
     }
 };
 
 // Actualizar  cliente
 export const updateClient = async (req, res) => {
-    const { id } = req.params;
-    const { nombre, direccion, telefono, email } = req.body;
+    const { id } = req.params; // ID del cliente
+    const { nombre, correo, telefono, direccion } = req.body; // Campos del cliente a actualizar
 
     try {
         const pool = await getConnection();
+
         const result = await pool
             .request()
-            .input('id', sql.Int, id)
-            .input('nombre', sql.varchar, nombre)
-            .input('direccion', sql.varchar, direccion)
-            .input('telefono', sql.varchar, telefono)
-            .input('email', sql.varchar, email)
-            .query('UPDATE clientes SET nombre = @nombre, direccion = @direccion, telefono = @telefono, email = @email WHERE idCliente = @id');
+            .input("id", sql.Int, id)
+            .input("nombre", sql.VarChar, nombre)
+            .input("correo", sql.VarChar, correo)
+            .input("telefono", sql.VarChar, telefono)
+            .input("direccion", sql.VarChar, direccion)
+            .query(`
+                UPDATE clientes
+                SET 
+                    nombre = ISNULL(@nombre, nombre),
+                    correo = ISNULL(@correo, correo),
+                    telefono = ISNULL(@telefono, telefono),
+                    direccion = ISNULL(@direccion, direccion)
+                WHERE idCliente = @id
+            `);
 
         if (result.rowsAffected[0] === 0) {
-            return res.status(404).send("Cliente no encontrado");
+            return res.status(404).json({ message: "Cliente no encontrado" });
         }
 
-        res.send("Cliente actualizado exitosamente");
+        res.json({
+            message: "Cliente actualizado exitosamente",
+            updatedFields: { nombre, correo, telefono, direccion },
+        });
     } catch (error) {
-        res.status(500).send("Error al actualizar el cliente: " + error.message);
+        res.status(500).json({
+            message: "Error al actualizar el cliente",
+            error: error.message,
+        });
     }
 };
+

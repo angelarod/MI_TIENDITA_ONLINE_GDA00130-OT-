@@ -8,25 +8,31 @@ const encryptPassword = async (password) => {           // con esto encriptamos 
 };
 
 
-export const createUser = async (req, res) => {             // para crear usuario
-    const { correo_electronico, nombre_completo, contraseña, telefono, fecha_nacimiento } = req.body;
+export const createUser = async (req, res) => {
+    const { nombre, correo, password } = req.body;
 
     try {
-        const encryptedPassword = await encryptPassword(contraseña);
-        
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const pool = await getConnection();
         const result = await pool
             .request()
-            .input('correo_electronico', sql.varchar, correo_electronico)
-            .input('nombre_completo', sql.varchar, nombre_completo)
-            .input('contraseña', sql.varchar, encryptedPassword)
-            .input('telefono', sql.varchar, telefono)
-            .input('fecha_nacimiento', sql.date, fecha_nacimiento)
-            .query('INSERT INTO usuarios (correo_electronico, nombre_completo, contraseña, telefono, fecha_nacimiento) VALUES (@correo_electronico, @nombre_completo, @contraseña, @telefono, @fecha_nacimiento)');
+            .input('nombre', sql.VarChar, nombre)
+            .input('correo', sql.VarChar, correo)
+            .input('password', sql.VarChar, hashedPassword)
+            .query(
+                'INSERT INTO usuarios (nombre, correo, password) VALUES (@nombre, @correo, @password)'
+            );
 
-        res.status(201).send("Usuario creado exitosamente");
+        res.status(201).json({
+            message: "Usuario creado exitosamente",
+            userId: result.recordset[0]?.idUsuario || null,
+        });
     } catch (error) {
-        res.status(500).send("Error al crear el usuario: " + error.message);
+        res.status(500).json({
+            message: "Error al crear el usuario",
+            error: error.message,
+        });
     }
 };
 

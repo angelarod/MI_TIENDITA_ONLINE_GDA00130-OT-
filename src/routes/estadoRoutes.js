@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createEstado, getEstados, getEstado, updateEstado } from '../controllers/estadoControllers.js';
+import { createEstado, getEstados, getEstado, updateEstado } from '../controllers/states.controllers.js';
 
 const router = Router();
 
